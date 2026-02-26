@@ -47,11 +47,11 @@
                         <div class="relative" x-data="{ open: false }">
                             <button @click="open = !open" class="flex items-center gap-3 p-2 rounded-lg hover:bg-secondary-100 transition">
                                 <div class="w-9 h-9 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white font-semibold">
-                                    {{ strtoupper(substr($role ?? 'P', 0, 1)) }}
+                                    {{ strtoupper(substr(auth()->user()->name ?? 'U', 0, 1)) }}
                                 </div>
                                 <div class="hidden sm:block text-left">
-                                    <p class="text-sm font-medium text-secondary-800">{{ $userName ?? 'Admin User' }}</p>
-                                    <p class="text-xs text-secondary-500 capitalize">{{ $role ?? 'petugas' }}</p>
+                                    <p class="text-sm font-medium text-secondary-800">{{ auth()->user()->name ?? 'User' }}</p>
+                                    <p class="text-xs text-secondary-500 capitalize">{{ auth()->user()->role }}</p>
                                 </div>
                                 <svg class="w-4 h-4 text-secondary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
@@ -80,12 +80,15 @@
                                     </svg>
                                     Kembali ke Beranda
                                 </a>
-                                <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-red-50">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                                    </svg>
-                                    Keluar
-                                </a>
+                                <form action="{{ route('logout') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-red-50 w-full">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                        </svg>
+                                        Keluar
+                                    </button>
+                                </form>
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 {{-- 
     Komponen Navbar untuk halaman user
     Menampilkan logo, menu navigasi, search, dan user dropdown
+    Dengan auth state yang dinamis
 --}}
 @props(['transparent' => false])
 
@@ -21,9 +22,11 @@
                 <a href="/books" class="{{ $transparent ? 'text-white/90 hover:text-white' : 'text-secondary-600 hover:text-primary-600' }} font-medium transition">
                     Katalog
                 </a>
+                @auth
                 <a href="/loans" class="{{ $transparent ? 'text-white/90 hover:text-white' : 'text-secondary-600 hover:text-primary-600' }} font-medium transition">
                     Peminjaman Saya
                 </a>
+                @endauth
             </div>
 
             <!-- Right Side -->
@@ -37,13 +40,14 @@
 
                 <!-- User Menu (Desktop) -->
                 <div class="hidden md:flex items-center gap-3">
-                    {{-- Tampilkan jika sudah login (dummy: selalu tampil) --}}
+                    @auth
+                    {{-- User sudah login --}}
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="flex items-center gap-2 p-2 rounded-lg {{ $transparent ? 'text-white hover:bg-white/10' : 'hover:bg-secondary-100' }} transition">
                             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-white text-sm font-semibold">
-                                U
+                                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                             </div>
-                            <span class="{{ $transparent ? 'text-white' : 'text-secondary-700' }} font-medium">User Demo</span>
+                            <span class="{{ $transparent ? 'text-white' : 'text-secondary-700' }} font-medium">{{ auth()->user()->name }}</span>
                             <svg class="w-4 h-4 {{ $transparent ? 'text-white/80' : 'text-secondary-500' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                             </svg>
@@ -63,14 +67,18 @@
                                 </svg>
                                 Profil Saya
                             </a>
+                            
+                            @if(in_array(auth()->user()->role, ['petugas', 'admin']))
                             <hr class="my-2 border-secondary-200">
-                            {{-- Link ke dashboard berdasarkan role (untuk demo) --}}
                             <a href="/petugas" class="flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/>
                                 </svg>
                                 Dashboard Petugas
                             </a>
+                            @endif
+                            
+                            @if(auth()->user()->role === 'admin')
                             <a href="/admin" class="flex items-center gap-2 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
@@ -78,15 +86,29 @@
                                 </svg>
                                 Dashboard Admin
                             </a>
+                            @endif
+                            
                             <hr class="my-2 border-secondary-200">
-                            <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-red-50">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                                </svg>
-                                Keluar
-                            </a>
+                            <form action="{{ route('logout') }}" method="POST">
+                                @csrf
+                                <button type="submit" class="flex items-center gap-2 px-4 py-2 text-sm text-error hover:bg-red-50 w-full">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                                    </svg>
+                                    Keluar
+                                </button>
+                            </form>
                         </div>
                     </div>
+                    @else
+                    {{-- User belum login --}}
+                    <a href="{{ route('login') }}" class="px-4 py-2 text-sm font-medium {{ $transparent ? 'text-white hover:text-white/80' : 'text-secondary-700 hover:text-primary-600' }} transition">
+                        Masuk
+                    </a>
+                    <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-semibold text-white bg-primary-600 rounded-lg hover:bg-primary-700 transition">
+                        Daftar
+                    </a>
+                    @endauth
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -104,12 +126,25 @@
         <div class="px-4 py-3 space-y-2">
             <a href="/" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Beranda</a>
             <a href="/books" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Katalog</a>
+            @auth
             <a href="/loans" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Peminjaman Saya</a>
             <hr class="border-secondary-200">
+            @if(in_array(auth()->user()->role, ['petugas', 'admin']))
             <a href="/petugas" class="block px-4 py-2 rounded-lg text-primary-600 hover:bg-primary-50 font-medium">Dashboard Petugas</a>
+            @endif
+            @if(auth()->user()->role === 'admin')
             <a href="/admin" class="block px-4 py-2 rounded-lg text-primary-600 hover:bg-primary-50 font-medium">Dashboard Admin</a>
+            @endif
             <hr class="border-secondary-200">
-            <a href="#" class="block px-4 py-2 rounded-lg text-error hover:bg-red-50 font-medium">Keluar</a>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button type="submit" class="block w-full text-left px-4 py-2 rounded-lg text-error hover:bg-red-50 font-medium">Keluar</button>
+            </form>
+            @else
+            <hr class="border-secondary-200">
+            <a href="{{ route('login') }}" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Masuk</a>
+            <a href="{{ route('register') }}" class="block px-4 py-2 rounded-lg text-primary-600 bg-primary-50 hover:bg-primary-100 font-medium">Daftar</a>
+            @endauth
         </div>
     </div>
 </nav>
