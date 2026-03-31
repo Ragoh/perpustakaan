@@ -27,35 +27,55 @@ Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->n
 
 // ===== Public Routes =====
 Route::get('/', fn() => view('user.index'))->name('home');
-Route::get('/books', fn() => view('user.books.index'))->name('books.index');
-Route::get('/books/{id}', fn() => view('user.books.show'))->name('books.show');
+Route::get('/books', [\App\Http\Controllers\User\BookController::class, 'index'])->name('books.index');
+Route::get('/books/{id}', [\App\Http\Controllers\User\BookController::class, 'show'])->name('books.show');
 
-// ===== User Routes (Auth Required) =====
-Route::middleware('auth')->group(function () {
-    Route::get('/loans', fn() => view('user.loans.index'))->name('loans.index');
-    Route::get('/loans/create/{book_id?}', fn() => view('user.loans.create'))->name('loans.create');
-    Route::get('/reviews/create/{book_id}', fn() => view('user.reviews.create'))->name('reviews.create');
+// ===== User Routes (Auth + Role User Only) =====
+Route::middleware(['auth', 'role:user'])->group(function () {
+    // Peminjaman
+    Route::get('/loans', [\App\Http\Controllers\User\LoanController::class, 'index'])->name('loans.index');
+    Route::get('/loans/create/{book_id}', [\App\Http\Controllers\User\LoanController::class, 'create'])->name('loans.create');
+    Route::post('/loans', [\App\Http\Controllers\User\LoanController::class, 'store'])->name('loans.store');
+    Route::get('/loans/{id}/receipt', [\App\Http\Controllers\User\LoanController::class, 'receipt'])->name('loans.receipt');
+    Route::post('/loans/{id}/return', [\App\Http\Controllers\User\LoanController::class, 'returnBook'])->name('loans.return');
+    
+    // Ulasan
+    Route::get('/reviews/create/{book_id}', fn($book_id) => view('user.reviews.create', ['book' => \App\Models\Book::findOrFail($book_id)]))->name('reviews.create');
+    Route::post('/reviews', [\App\Http\Controllers\User\ReviewController::class, 'store'])->name('reviews.store');
 });
 
 // ===== Petugas Routes =====
 Route::prefix('petugas')->name('petugas.')->middleware(['auth', 'role:petugas,admin'])->group(function () {
     Route::get('/', fn() => view('petugas.dashboard.index'))->name('dashboard');
     
-    // Books CRUD
-    Route::get('/books', fn() => view('petugas.books.index'))->name('books.index');
-    Route::get('/books/create', fn() => view('petugas.books.create'))->name('books.create');
-    Route::get('/books/{id}/edit', fn() => view('petugas.books.edit'))->name('books.edit');
-    
     // Categories CRUD
-    Route::get('/categories', fn() => view('petugas.categories.index'))->name('categories.index');
-    Route::get('/categories/create', fn() => view('petugas.categories.create'))->name('categories.create');
-    Route::get('/categories/{id}/edit', fn() => view('petugas.categories.edit'))->name('categories.edit');
+    Route::get('/categories', [\App\Http\Controllers\Petugas\CategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create', [\App\Http\Controllers\Petugas\CategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories', [\App\Http\Controllers\Petugas\CategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{id}/edit', [\App\Http\Controllers\Petugas\CategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('/categories/{id}', [\App\Http\Controllers\Petugas\CategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{id}', [\App\Http\Controllers\Petugas\CategoryController::class, 'destroy'])->name('categories.destroy');
+    
+    // Books CRUD
+    Route::get('/books', [\App\Http\Controllers\Petugas\BookController::class, 'index'])->name('books.index');
+    Route::get('/books/create', [\App\Http\Controllers\Petugas\BookController::class, 'create'])->name('books.create');
+    Route::post('/books', [\App\Http\Controllers\Petugas\BookController::class, 'store'])->name('books.store');
+    Route::get('/books/{id}/edit', [\App\Http\Controllers\Petugas\BookController::class, 'edit'])->name('books.edit');
+    Route::put('/books/{id}', [\App\Http\Controllers\Petugas\BookController::class, 'update'])->name('books.update');
+    Route::delete('/books/{id}', [\App\Http\Controllers\Petugas\BookController::class, 'destroy'])->name('books.destroy');
     
     // Loans Management
-    Route::get('/loans', fn() => view('petugas.loans.index'))->name('loans.index');
+    Route::get('/loans', [\App\Http\Controllers\Petugas\LoanController::class, 'index'])->name('loans.index');
+    Route::get('/loans/{id}', [\App\Http\Controllers\Petugas\LoanController::class, 'show'])->name('loans.show');
+    Route::post('/loans/{id}/approve', [\App\Http\Controllers\Petugas\LoanController::class, 'approve'])->name('loans.approve');
+    Route::post('/loans/{id}/reject', [\App\Http\Controllers\Petugas\LoanController::class, 'reject'])->name('loans.reject');
+    Route::post('/loans/{id}/borrowed', [\App\Http\Controllers\Petugas\LoanController::class, 'markBorrowed'])->name('loans.borrowed');
+    Route::post('/loans/{id}/approve-return', [\App\Http\Controllers\Petugas\LoanController::class, 'approveReturn'])->name('loans.approve-return');
+    Route::post('/loans/{id}/reject-return', [\App\Http\Controllers\Petugas\LoanController::class, 'rejectReturn'])->name('loans.reject-return');
     
     // Reports
-    Route::get('/reports', fn() => view('petugas.reports.index'))->name('reports.index');
+    Route::get('/reports', [\App\Http\Controllers\Petugas\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/preview', [\App\Http\Controllers\Petugas\ReportController::class, 'preview'])->name('reports.preview');
 });
 
 // ===== Admin Routes =====
@@ -67,6 +87,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/users/{id}/edit', [\App\Http\Controllers\Admin\UserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{id}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
     
+    // Tambah Petugas
+    Route::get('/petugas/create', [\App\Http\Controllers\Admin\UserController::class, 'createPetugas'])->name('petugas.create');
+    Route::post('/petugas', [\App\Http\Controllers\Admin\UserController::class, 'storePetugas'])->name('petugas.store');
+    
     // Reports
-    Route::get('/reports', fn() => view('admin.reports.index'))->name('reports.index');
+    Route::get('/reports', [\App\Http\Controllers\Admin\ReportController::class, 'index'])->name('reports.index');
+    Route::get('/reports/preview', [\App\Http\Controllers\Admin\ReportController::class, 'preview'])->name('reports.preview');
 });

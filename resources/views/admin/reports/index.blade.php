@@ -1,92 +1,257 @@
-{{-- Laporan Global Admin --}}
+{{-- Laporan Admin --}}
 @extends('layouts.admin')
-
-@php
-    $role = 'admin';
-    $userName = 'Admin Demo';
-@endphp
+@php $role = 'admin'; @endphp
 
 @section('page-title', 'Laporan Global')
 
 @section('content')
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-secondary-900">Laporan Global Sistem</h2>
-        <p class="text-secondary-600">Statistik keseluruhan perpustakaan</p>
+    <div class="flex items-center justify-between mb-6">
+        <div>
+            <h2 class="text-2xl font-bold text-secondary-900">Laporan Global</h2>
+            <p class="text-secondary-600">Data peminjaman, buku, kategori, ulasan, dan user</p>
+        </div>
+        <button onclick="printReport('{{ route('admin.reports.preview', ['tab' => $tab]) }}')" class="inline-flex items-center gap-2 px-5 py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+            Cetak Laporan
+        </button>
     </div>
 
-    {{-- Statistics Cards --}}
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <x-stat-card title="Total User" value="1,234" icon="users" color="primary" :change="5" changeLabel="dari bulan lalu"/>
-        <x-stat-card title="Total Buku" value="5,234" icon="book" color="info" :change="8" changeLabel="dari bulan lalu"/>
-        <x-stat-card title="Total Peminjaman" value="12,456" icon="clipboard" color="success" :change="15" changeLabel="dari bulan lalu"/>
-        <x-stat-card title="Total Review" value="3,456" icon="star" color="warning" :change="12" changeLabel="dari bulan lalu"/>
+    {{-- Tabs --}}
+    <div class="flex gap-2 mb-6 border-b border-secondary-200">
+        <a href="?tab=loans" class="px-4 py-3 font-medium text-sm border-b-2 transition {{ $tab === 'loans' ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700' }}">
+            📋 Peminjaman & Pengembalian
+        </a>
+        <a href="?tab=books" class="px-4 py-3 font-medium text-sm border-b-2 transition {{ $tab === 'books' ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700' }}">
+            📚 Buku & Kategori
+        </a>
+        <a href="?tab=reviews" class="px-4 py-3 font-medium text-sm border-b-2 transition {{ $tab === 'reviews' ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700' }}">
+            ⭐ Ulasan
+        </a>
+        <a href="?tab=users" class="px-4 py-3 font-medium text-sm border-b-2 transition {{ $tab === 'users' ? 'border-primary-600 text-primary-600' : 'border-transparent text-secondary-500 hover:text-secondary-700' }}">
+            👥 User, Admin & Petugas
+        </a>
     </div>
 
-    {{-- Charts Row --}}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        {{-- User Growth --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 p-6">
-            <h3 class="font-semibold text-secondary-900 mb-6">Pertumbuhan User (6 Bulan)</h3>
-            <div class="h-48 flex items-end justify-between gap-3">
-                @foreach([850, 920, 980, 1050, 1150, 1234] as $i => $val)
-                    <div class="flex-1 flex flex-col items-center gap-2">
-                        <div class="w-full bg-primary-500 rounded-t" style="height: {{ ($val / 1300) * 180 }}px"></div>
-                        <span class="text-xs text-secondary-600">{{ ['Agt', 'Sep', 'Okt', 'Nov', 'Des', 'Jan'][$i] }}</span>
-                    </div>
-                @endforeach
+    {{-- Tab: Peminjaman --}}
+    @if($tab === 'loans')
+        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-secondary-50 text-secondary-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">#</th>
+                            <th class="px-4 py-3 text-left font-medium">Peminjam</th>
+                            <th class="px-4 py-3 text-left font-medium">Buku</th>
+                            <th class="px-4 py-3 text-left font-medium">Tgl Pinjam</th>
+                            <th class="px-4 py-3 text-left font-medium">Batas Kembali</th>
+                            <th class="px-4 py-3 text-left font-medium">Tgl Kembali</th>
+                            <th class="px-4 py-3 text-left font-medium">Status</th>
+                            <th class="px-4 py-3 text-left font-medium">Disetujui Oleh</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-secondary-100">
+                        @forelse($loans as $loan)
+                            <tr class="hover:bg-secondary-50 transition">
+                                <td class="px-4 py-3 text-secondary-500">{{ $loan->id }}</td>
+                                <td class="px-4 py-3">
+                                    <p class="font-medium text-secondary-900">{{ $loan->user->name }}</p>
+                                    <p class="text-xs text-secondary-500">{{ $loan->user->email }}</p>
+                                </td>
+                                <td class="px-4 py-3 text-secondary-700">{{ $loan->book->title ?? '-' }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $loan->loan_date->format('d M Y') }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $loan->due_date->format('d M Y') }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $loan->return_date ? $loan->return_date->format('d M Y') : '-' }}</td>
+                                <td class="px-4 py-3"><x-badge :type="$loan->status_type" size="sm">{{ $loan->status_label }}</x-badge></td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $loan->approver->name ?? '-' }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="8" class="px-4 py-8 text-center text-secondary-500">Belum ada data peminjaman.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($loans->hasPages())
+                <div class="px-4 py-3 border-t border-secondary-200">{{ $loans->appends(['tab' => 'loans'])->links() }}</div>
+            @endif
+        </div>
+    @endif
+
+    {{-- Tab: Buku & Kategori --}}
+    @if($tab === 'books')
+        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden mb-6">
+            <div class="px-6 py-4 border-b border-secondary-200">
+                <h3 class="font-semibold text-secondary-900">Data Kategori</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-secondary-50 text-secondary-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">#</th>
+                            <th class="px-4 py-3 text-left font-medium">Nama Kategori</th>
+                            <th class="px-4 py-3 text-left font-medium">Deskripsi</th>
+                            <th class="px-4 py-3 text-left font-medium">Jumlah Buku</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-secondary-100">
+                        @forelse($categories as $cat)
+                            <tr class="hover:bg-secondary-50 transition">
+                                <td class="px-4 py-3 text-secondary-500">{{ $cat->id }}</td>
+                                <td class="px-4 py-3 font-medium text-secondary-900">{{ $cat->icon ?? '' }} {{ $cat->name }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ Str::limit($cat->description, 60) }}</td>
+                                <td class="px-4 py-3 text-secondary-700">{{ $cat->books_count }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="px-4 py-8 text-center text-secondary-500">Belum ada kategori.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
             </div>
         </div>
 
-        {{-- Loan Stats --}}
-        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 p-6">
-            <h3 class="font-semibold text-secondary-900 mb-6">Statistik Peminjaman Bulanan</h3>
-            <div class="h-48 flex items-end justify-between gap-3">
-                @foreach([1200, 1450, 1100, 1680, 1520, 1890] as $i => $val)
-                    <div class="flex-1 flex flex-col items-center gap-2">
-                        <div class="w-full bg-green-500 rounded-t" style="height: {{ ($val / 2000) * 180 }}px"></div>
-                        <span class="text-xs text-secondary-600">{{ ['Agt', 'Sep', 'Okt', 'Nov', 'Des', 'Jan'][$i] }}</span>
-                    </div>
-                @endforeach
+        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-secondary-200">
+                <h3 class="font-semibold text-secondary-900">Data Buku</h3>
             </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-secondary-50 text-secondary-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">#</th>
+                            <th class="px-4 py-3 text-left font-medium">Judul</th>
+                            <th class="px-4 py-3 text-left font-medium">Penulis</th>
+                            <th class="px-4 py-3 text-left font-medium">Kategori</th>
+                            <th class="px-4 py-3 text-left font-medium">Stok</th>
+                            <th class="px-4 py-3 text-left font-medium">Peminjaman</th>
+                            <th class="px-4 py-3 text-left font-medium">Rating</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-secondary-100">
+                        @forelse($books as $book)
+                            <tr class="hover:bg-secondary-50 transition">
+                                <td class="px-4 py-3 text-secondary-500">{{ $book->id }}</td>
+                                <td class="px-4 py-3 font-medium text-secondary-900">{{ $book->title }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $book->author }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $book->category->name ?? '-' }}</td>
+                                <td class="px-4 py-3 text-secondary-700">{{ $book->stock }}</td>
+                                <td class="px-4 py-3 text-secondary-700">{{ $book->loans_count }}</td>
+                                <td class="px-4 py-3 text-secondary-700">
+                                    @if($book->reviews_avg_rating)
+                                        ⭐ {{ number_format($book->reviews_avg_rating, 1) }}
+                                    @else
+                                        <span class="text-secondary-400">-</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="7" class="px-4 py-8 text-center text-secondary-500">Belum ada buku.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($books->hasPages())
+                <div class="px-4 py-3 border-t border-secondary-200">{{ $books->appends(['tab' => 'books'])->links() }}</div>
+            @endif
         </div>
-    </div>
+    @endif
 
-    {{-- Summary Table --}}
-    <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden">
-        <div class="px-6 py-4 border-b border-secondary-200">
-            <h3 class="font-semibold text-secondary-900">Ringkasan Per Kategori</h3>
+    {{-- Tab: Ulasan --}}
+    @if($tab === 'reviews')
+        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-secondary-50 text-secondary-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">#</th>
+                            <th class="px-4 py-3 text-left font-medium">User</th>
+                            <th class="px-4 py-3 text-left font-medium">Buku</th>
+                            <th class="px-4 py-3 text-left font-medium">Rating</th>
+                            <th class="px-4 py-3 text-left font-medium">Komentar</th>
+                            <th class="px-4 py-3 text-left font-medium">Tanggal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-secondary-100">
+                        @forelse($reviews as $review)
+                            <tr class="hover:bg-secondary-50 transition">
+                                <td class="px-4 py-3 text-secondary-500">{{ $review->id }}</td>
+                                <td class="px-4 py-3 font-medium text-secondary-900">{{ $review->user->name }}</td>
+                                <td class="px-4 py-3 text-secondary-700">{{ $review->book->title ?? '-' }}</td>
+                                <td class="px-4 py-3">
+                                    <span class="text-amber-500">
+                                        @for($i = 1; $i <= 5; $i++)
+                                            {{ $i <= $review->rating ? '★' : '☆' }}
+                                        @endfor
+                                    </span>
+                                </td>
+                                <td class="px-4 py-3 text-secondary-600 max-w-xs truncate">{{ $review->comment ?? '-' }}</td>
+                                <td class="px-4 py-3 text-secondary-500">{{ $review->created_at->format('d M Y') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-secondary-500">Belum ada ulasan.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($reviews->hasPages())
+                <div class="px-4 py-3 border-t border-secondary-200">{{ $reviews->appends(['tab' => 'reviews'])->links() }}</div>
+            @endif
         </div>
-        <table class="w-full">
-            <thead class="bg-secondary-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Kategori</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Jumlah Buku</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Dipinjam</th>
-                    <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Rating Avg</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-secondary-100">
-                @foreach([
-                    ['Fiksi', 1250, 456, 4.6],
-                    ['Non-Fiksi', 890, 321, 4.5],
-                    ['Sains', 456, 187, 4.7],
-                    ['Sejarah', 324, 98, 4.4],
-                    ['Self-Help', 567, 234, 4.8]
-                ] as $cat)
-                    <tr class="hover:bg-secondary-50">
-                        <td class="px-6 py-4 font-medium text-secondary-900">{{ $cat[0] }}</td>
-                        <td class="px-6 py-4 text-secondary-600">{{ number_format($cat[1]) }}</td>
-                        <td class="px-6 py-4 text-secondary-600">{{ number_format($cat[2]) }}</td>
-                        <td class="px-6 py-4"><x-rating :value="$cat[3]" size="sm" /></td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+    @endif
 
-    {{-- Export --}}
-    <div class="mt-6 flex gap-3 justify-end">
-        <button class="px-4 py-2 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition">Export Excel</button>
-        <button class="px-4 py-2 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition">Export PDF</button>
-    </div>
+    {{-- Tab: Users --}}
+    @if($tab === 'users')
+        <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-secondary-50 text-secondary-600">
+                        <tr>
+                            <th class="px-4 py-3 text-left font-medium">#</th>
+                            <th class="px-4 py-3 text-left font-medium">Nama</th>
+                            <th class="px-4 py-3 text-left font-medium">Email</th>
+                            <th class="px-4 py-3 text-left font-medium">Role</th>
+                            <th class="px-4 py-3 text-left font-medium">Status</th>
+                            <th class="px-4 py-3 text-left font-medium">Terdaftar</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-secondary-100">
+                        @forelse($users as $user)
+                            @php
+                                $roleColors = ['admin' => 'error', 'petugas' => 'info', 'user' => 'default'];
+                            @endphp
+                            <tr class="hover:bg-secondary-50 transition">
+                                <td class="px-4 py-3 text-secondary-500">{{ $user->id }}</td>
+                                <td class="px-4 py-3 font-medium text-secondary-900">{{ $user->name }}</td>
+                                <td class="px-4 py-3 text-secondary-600">{{ $user->email }}</td>
+                                <td class="px-4 py-3"><x-badge :type="$roleColors[$user->role] ?? 'default'" size="sm">{{ ucfirst($user->role) }}</x-badge></td>
+                                <td class="px-4 py-3"><x-badge :type="$user->is_active ? 'success' : 'warning'" size="sm">{{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</x-badge></td>
+                                <td class="px-4 py-3 text-secondary-500">{{ $user->created_at->format('d M Y') }}</td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-secondary-500">Belum ada user.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if($users->hasPages())
+                <div class="px-4 py-3 border-t border-secondary-200">{{ $users->appends(['tab' => 'users'])->links() }}</div>
+            @endif
+        </div>
+    @endif
+
+    @push('scripts')
+    <script>
+        function printReport(url) {
+            let iframe = document.getElementById('print-iframe');
+            if (!iframe) {
+                iframe = document.createElement('iframe');
+                iframe.id = 'print-iframe';
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+            }
+            iframe.src = url;
+            iframe.onload = function() {
+                iframe.contentWindow.print();
+            };
+        }
+    </script>
+    @endpush
 @endsection

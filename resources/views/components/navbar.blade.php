@@ -23,9 +23,11 @@
                     Katalog
                 </a>
                 @auth
+                @if(auth()->user()->role === 'user')
                 <a href="/loans" class="{{ $transparent ? 'text-white/90 hover:text-white' : 'text-secondary-600 hover:text-primary-600' }} font-medium transition">
                     Peminjaman Saya
                 </a>
+                @endif
                 @endauth
             </div>
 
@@ -55,12 +57,14 @@
 
                         <!-- Dropdown -->
                         <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-secondary-200 py-2 z-50">
+                            @if(auth()->user()->role === 'user')
                             <a href="/loans" class="flex items-center gap-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
                                 Peminjaman Saya
                             </a>
+                            @endif
                             <a href="#" class="flex items-center gap-2 px-4 py-2 text-sm text-secondary-700 hover:bg-secondary-100">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
@@ -127,7 +131,9 @@
             <a href="/" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Beranda</a>
             <a href="/books" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Katalog</a>
             @auth
+            @if(auth()->user()->role === 'user')
             <a href="/loans" class="block px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 font-medium">Peminjaman Saya</a>
+            @endif
             <hr class="border-secondary-200">
             @if(in_array(auth()->user()->role, ['petugas', 'admin']))
             <a href="/petugas" class="block px-4 py-2 rounded-lg text-primary-600 hover:bg-primary-50 font-medium">Dashboard Petugas</a>

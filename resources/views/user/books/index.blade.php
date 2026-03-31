@@ -1,17 +1,13 @@
-{{-- 
-    Daftar Buku
-    Menampilkan semua buku dengan filter dan search
---}}
+{{-- Katalog Buku --}}
 @extends('layouts.app')
-
 @section('title', 'Katalog Buku - PerpusKu')
 
 @section('content')
-    {{-- Page Header --}}
+    {{-- Header --}}
     <section class="bg-gradient-to-br from-primary-600 to-primary-700 py-12">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h1 class="text-3xl md:text-4xl font-bold text-white mb-2">Katalog Buku</h1>
-            <p class="text-primary-100">Temukan buku favorit Anda dari ribuan koleksi kami</p>
+            <p class="text-primary-100">Temukan buku favoritmu dari koleksi perpustakaan kami</p>
         </div>
     </section>
 
@@ -21,139 +17,67 @@
             <div class="flex flex-col lg:flex-row gap-8">
                 {{-- Sidebar Filter --}}
                 <aside class="lg:w-64 flex-shrink-0">
-                    <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 p-6 sticky top-4">
-                        <h3 class="font-semibold text-secondary-900 mb-4">Filter</h3>
-
-                        {{-- Search --}}
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-secondary-700 mb-2">Cari Buku</label>
-                            <div class="relative">
-                                <input type="text" placeholder="Judul atau penulis..." 
-                                       class="w-full px-4 py-2.5 rounded-xl border border-secondary-300 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition">
-                                <svg class="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-secondary-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
-                            </div>
-                        </div>
-
-                        {{-- Category Filter --}}
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-secondary-700 mb-2">Kategori</label>
-                            <div class="space-y-2">
-                                @foreach(['Semua', 'Fiksi', 'Non-Fiksi', 'Sains', 'Sejarah', 'Bisnis', 'Self-Help'] as $cat)
-                                    <label class="flex items-center gap-2 cursor-pointer">
-                                        <input type="radio" name="category" value="{{ $cat }}" {{ $cat === 'Semua' ? 'checked' : '' }}
-                                               class="w-4 h-4 text-primary-600 border-secondary-300 focus:ring-primary-500">
-                                        <span class="text-secondary-700">{{ $cat }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
-                        </div>
-
-                        {{-- Availability Filter --}}
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-secondary-700 mb-2">Ketersediaan</label>
-                            <div class="space-y-2">
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="available" checked
-                                           class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500">
-                                    <span class="text-secondary-700">Tersedia</span>
-                                </label>
-                                <label class="flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="borrowed"
-                                           class="w-4 h-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500">
-                                    <span class="text-secondary-700">Sedang Dipinjam</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        {{-- Rating Filter --}}
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-secondary-700 mb-2">Rating Minimum</label>
-                            <select class="w-full px-4 py-2.5 rounded-xl border border-secondary-300 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition">
-                                <option value="">Semua Rating</option>
-                                <option value="4">4+ Bintang</option>
-                                <option value="3">3+ Bintang</option>
-                                <option value="2">2+ Bintang</option>
-                            </select>
-                        </div>
-
-                        <button class="w-full py-2.5 bg-primary-600 text-white font-semibold rounded-xl hover:bg-primary-700 transition">
-                            Terapkan Filter
-                        </button>
+                    <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 p-6 sticky top-6">
+                        <h3 class="font-semibold text-secondary-900 mb-4">Kategori</h3>
+                        <ul class="space-y-2">
+                            <li>
+                                <a href="{{ route('books.index') }}" class="block px-3 py-2 text-sm font-medium rounded-lg {{ !request('category') ? 'bg-primary-50 text-primary-700' : 'text-secondary-600 hover:bg-secondary-50' }} transition">
+                                    Semua Buku
+                                </a>
+                            </li>
+                            @foreach($categories as $cat)
+                                <li>
+                                    <a href="{{ route('books.index', ['category' => $cat->id]) }}" class="flex items-center justify-between px-3 py-2 text-sm rounded-lg {{ request('category') == $cat->id ? 'bg-primary-50 text-primary-700 font-medium' : 'text-secondary-600 hover:bg-secondary-50' }} transition">
+                                        <span>{{ $cat->icon }} {{ $cat->name }}</span>
+                                        <span class="text-xs text-secondary-400">{{ $cat->books_count }}</span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
                     </div>
                 </aside>
 
                 {{-- Books Grid --}}
                 <div class="flex-1">
-                    {{-- Sort & View Toggle --}}
-                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                        <p class="text-secondary-600">
-                            Menampilkan <span class="font-semibold text-secondary-900">1-12</span> dari 
-                            <span class="font-semibold text-secondary-900">150</span> buku
-                        </p>
-                        <div class="flex items-center gap-3">
-                            <label class="text-sm text-secondary-600">Urutkan:</label>
-                            <select class="px-4 py-2 rounded-xl border border-secondary-300 focus:ring-2 focus:ring-primary-500/20 focus:border-primary-500 transition text-sm">
-                                <option>Terbaru</option>
-                                <option>Terpopuler</option>
-                                <option>Rating Tertinggi</option>
-                                <option>A-Z</option>
-                            </select>
-                        </div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        @forelse($books as $book)
+                            <a href="{{ route('books.show', $book->id) }}" class="group bg-white rounded-2xl shadow-sm border border-secondary-200 overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+                                <div class="aspect-[3/4] bg-gradient-to-br from-primary-100 to-primary-200 flex items-center justify-center relative overflow-hidden">
+                                    @if($book->cover)
+                                        <img src="{{ Storage::url($book->cover) }}" class="w-full h-full object-cover" alt="">
+                                    @else
+                                        <span class="text-6xl">📚</span>
+                                    @endif
+                                    @if(!$book->is_available)
+                                        <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                            <span class="px-3 py-1 bg-red-600 text-white text-xs font-bold rounded-full">Tidak Tersedia</span>
+                                        </div>
+                                    @endif
+                                </div>
+                                <div class="p-4">
+                                    <h3 class="font-semibold text-secondary-900 mb-1 line-clamp-2 group-hover:text-primary-600 transition">{{ $book->title }}</h3>
+                                    <p class="text-sm text-secondary-500 mb-2">{{ $book->author }}</p>
+                                    <div class="flex items-center justify-between">
+                                        <div class="flex items-center gap-1">
+                                            <svg class="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+                                            <span class="text-sm font-medium text-secondary-700">{{ number_format($book->reviews_avg_rating ?? 0, 1) }}</span>
+                                        </div>
+                                        <x-badge type="primary" size="sm">{{ $book->category->name }}</x-badge>
+                                    </div>
+                                </div>
+                            </a>
+                        @empty
+                            <div class="col-span-full bg-white rounded-2xl p-12 text-center">
+                                <span class="text-6xl block mb-4">📚</span>
+                                <h3 class="text-lg font-semibold text-secondary-900 mb-2">Belum ada buku</h3>
+                                <p class="text-secondary-600">Katalog buku masih kosong</p>
+                            </div>
+                        @endforelse
                     </div>
 
-                    {{-- Books --}}
-                    @php
-                        $books = [
-                            ['id' => 1, 'title' => 'Laskar Pelangi', 'author' => 'Andrea Hirata', 'category' => 'Fiksi', 'rating' => 4.8, 'available' => true],
-                            ['id' => 2, 'title' => 'Bumi Manusia', 'author' => 'Pramoedya Ananta Toer', 'category' => 'Sejarah', 'rating' => 4.9, 'available' => true],
-                            ['id' => 3, 'title' => 'Filosofi Teras', 'author' => 'Henry Manampiring', 'category' => 'Self-Help', 'rating' => 4.7, 'available' => false],
-                            ['id' => 4, 'title' => 'Atomic Habits', 'author' => 'James Clear', 'category' => 'Pengembangan Diri', 'rating' => 4.9, 'available' => true],
-                            ['id' => 5, 'title' => 'Sapiens', 'author' => 'Yuval Noah Harari', 'category' => 'Sains', 'rating' => 4.6, 'available' => true],
-                            ['id' => 6, 'title' => 'Pulang', 'author' => 'Tere Liye', 'category' => 'Fiksi', 'rating' => 4.5, 'available' => false],
-                            ['id' => 7, 'title' => 'Sang Pemimpi', 'author' => 'Andrea Hirata', 'category' => 'Fiksi', 'rating' => 4.7, 'available' => true],
-                            ['id' => 8, 'title' => 'The Psychology of Money', 'author' => 'Morgan Housel', 'category' => 'Bisnis', 'rating' => 4.8, 'available' => true],
-                            ['id' => 9, 'title' => 'Rich Dad Poor Dad', 'author' => 'Robert Kiyosaki', 'category' => 'Bisnis', 'rating' => 4.5, 'available' => true],
-                            ['id' => 10, 'title' => 'Thinking Fast and Slow', 'author' => 'Daniel Kahneman', 'category' => 'Sains', 'rating' => 4.4, 'available' => false],
-                            ['id' => 11, 'title' => 'Negeri 5 Menara', 'author' => 'Ahmad Fuadi', 'category' => 'Fiksi', 'rating' => 4.6, 'available' => true],
-                            ['id' => 12, 'title' => 'Perahu Kertas', 'author' => 'Dee Lestari', 'category' => 'Fiksi', 'rating' => 4.3, 'available' => true],
-                        ];
-                    @endphp
-
-                    <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-6">
-                        @foreach($books as $book)
-                            <x-book-card 
-                                :id="$book['id']"
-                                :title="$book['title']"
-                                :author="$book['author']"
-                                :category="$book['category']"
-                                :rating="$book['rating']"
-                                :available="$book['available']"
-                            />
-                        @endforeach
-                    </div>
-
-                    {{-- Pagination --}}
-                    <div class="mt-10 flex justify-center">
-                        <nav class="flex items-center gap-1">
-                            <button class="px-3 py-2 rounded-lg text-secondary-500 hover:bg-secondary-100 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                                </svg>
-                            </button>
-                            <button class="px-4 py-2 rounded-lg bg-primary-600 text-white font-medium">1</button>
-                            <button class="px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 transition">2</button>
-                            <button class="px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 transition">3</button>
-                            <span class="px-3 py-2 text-secondary-400">...</span>
-                            <button class="px-4 py-2 rounded-lg text-secondary-700 hover:bg-secondary-100 transition">13</button>
-                            <button class="px-3 py-2 rounded-lg text-secondary-500 hover:bg-secondary-100 transition">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </button>
-                        </nav>
-                    </div>
+                    @if($books->hasPages())
+                        <div class="mt-8">{{ $books->links() }}</div>
+                    @endif
                 </div>
             </div>
         </div>
