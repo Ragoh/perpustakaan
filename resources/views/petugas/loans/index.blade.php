@@ -19,7 +19,7 @@
             <p class="text-secondary-600">Kelola peminjaman dan pengembalian buku</p>
         </div>
         {{-- Filter --}}
-        <div class="flex gap-2">
+        <div class="flex gap-2 flex-wrap">
             <a href="{{ route('petugas.loans.index') }}" class="px-3 py-1.5 text-sm font-medium rounded-lg {{ !request('status') ? 'bg-primary-600 text-white' : 'bg-white text-secondary-600 hover:bg-secondary-100' }} transition">Semua</a>
             <a href="{{ route('petugas.loans.index', ['status' => 'pending']) }}" class="px-3 py-1.5 text-sm font-medium rounded-lg {{ request('status') === 'pending' ? 'bg-amber-500 text-white' : 'bg-white text-secondary-600 hover:bg-secondary-100' }} transition">Menunggu</a>
             <a href="{{ route('petugas.loans.index', ['status' => 'borrowed']) }}" class="px-3 py-1.5 text-sm font-medium rounded-lg {{ request('status') === 'borrowed' ? 'bg-primary-600 text-white' : 'bg-white text-secondary-600 hover:bg-secondary-100' }} transition">Dipinjam</a>
@@ -51,6 +51,7 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Buku</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Tanggal</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Denda</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-secondary-600 uppercase">Aksi</th>
                     </tr>
                 </thead>
@@ -72,6 +73,23 @@
                             </td>
                             <td class="px-6 py-4">
                                 <x-badge :type="$loan->status_type" size="sm">{{ $loan->status_label }}</x-badge>
+                                @if($loan->is_overdue)
+                                    <p class="text-xs text-red-600 mt-1 font-medium">{{ $loan->overdue_days }} hari terlambat</p>
+                                @endif
+                            </td>
+                            <td class="px-6 py-4 text-sm">
+                                @if($loan->fine_amount > 0)
+                                    <p class="font-semibold {{ $loan->fine_paid ? 'text-green-600' : 'text-red-600' }}">{{ $loan->formatted_fine }}</p>
+                                    @if($loan->fine_paid)
+                                        <span class="text-xs text-green-600">✓ Lunas</span>
+                                    @else
+                                        <span class="text-xs text-red-600">✗ Belum dibayar</span>
+                                    @endif
+                                @elseif($loan->is_overdue)
+                                    <p class="text-xs text-red-600 font-medium">Est. Rp {{ number_format($loan->calculated_fine, 0, ',', '.') }}</p>
+                                @else
+                                    <span class="text-secondary-400">-</span>
+                                @endif
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-wrap gap-1">
@@ -102,7 +120,16 @@
                                             <button class="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-lg hover:bg-red-700 transition">Tolak Kembali</button>
                                         </form>
                                     @elseif($loan->status === 'returned')
-                                        <span class="text-sm text-secondary-500">{{ $loan->return_date?->format('d M Y') }}</span>
+                                        @if($loan->has_unpaid_fine)
+                                            <form action="{{ route('petugas.loans.confirm-fine', $loan->id) }}" method="POST" class="inline" onsubmit="return confirm('Konfirmasi pembayaran denda {{ $loan->formatted_fine }}?')">
+                                                @csrf
+                                                <button class="px-3 py-1.5 bg-amber-600 text-white text-xs font-medium rounded-lg hover:bg-amber-700 transition">
+                                                    💰 Konfirmasi Denda Dibayar
+                                                </button>
+                                            </form>
+                                        @else
+                                            <span class="text-sm text-secondary-500">{{ $loan->return_date?->format('d M Y') }}</span>
+                                        @endif
                                     @elseif($loan->status === 'rejected')
                                         <span class="text-sm text-secondary-500">Ditolak</span>
                                     @endif
@@ -110,7 +137,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="6" class="px-6 py-12 text-center text-secondary-500">Belum ada data peminjaman.</td></tr>
+                        <tr><td colspan="7" class="px-6 py-12 text-center text-secondary-500">Belum ada data peminjaman.</td></tr>
                     @endforelse
                 </tbody>
             </table>

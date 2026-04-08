@@ -26,9 +26,16 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
 // ===== Public Routes =====
-Route::get('/', fn() => view('user.index'))->name('home');
+Route::get('/', [\App\Http\Controllers\User\HomeController::class, 'index'])->name('home');
 Route::get('/books', [\App\Http\Controllers\User\BookController::class, 'index'])->name('books.index');
 Route::get('/books/{id}', [\App\Http\Controllers\User\BookController::class, 'show'])->name('books.show');
+
+// ===== Profile (All Auth Users) =====
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [\App\Http\Controllers\User\ProfileController::class, 'index'])->name('profile');
+    Route::put('/profile', [\App\Http\Controllers\User\ProfileController::class, 'update'])->name('profile.update');
+    Route::put('/profile/password', [\App\Http\Controllers\User\ProfileController::class, 'updatePassword'])->name('profile.password');
+});
 
 // ===== User Routes (Auth + Role User Only) =====
 Route::middleware(['auth', 'role:user'])->group(function () {
@@ -72,6 +79,7 @@ Route::prefix('petugas')->name('petugas.')->middleware(['auth', 'role:petugas,ad
     Route::post('/loans/{id}/borrowed', [\App\Http\Controllers\Petugas\LoanController::class, 'markBorrowed'])->name('loans.borrowed');
     Route::post('/loans/{id}/approve-return', [\App\Http\Controllers\Petugas\LoanController::class, 'approveReturn'])->name('loans.approve-return');
     Route::post('/loans/{id}/reject-return', [\App\Http\Controllers\Petugas\LoanController::class, 'rejectReturn'])->name('loans.reject-return');
+    Route::post('/loans/{id}/confirm-fine', [\App\Http\Controllers\Petugas\LoanController::class, 'confirmFinePaid'])->name('loans.confirm-fine');
     
     // Reports
     Route::get('/reports', [\App\Http\Controllers\Petugas\ReportController::class, 'index'])->name('reports.index');

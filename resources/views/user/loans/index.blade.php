@@ -14,7 +14,8 @@
         $borrowed = $loans->whereIn('status', ['borrowed'])->count();
         $pending = $loans->where('status', 'pending')->count();
         $overdue = $loans->filter(fn($l) => $l->is_overdue)->count();
-        $total = $loans->count();
+        $unpaidFines = $loans->filter(fn($l) => $l->has_unpaid_fine);
+        $totalFine = $unpaidFines->sum('fine_amount');
     @endphp
 
     {{-- Stats --}}
@@ -34,12 +35,27 @@
                     <p class="text-sm text-red-700">Terlambat</p>
                 </div>
                 <div class="bg-green-50 rounded-xl p-4 text-center">
-                    <p class="text-3xl font-bold text-green-600">{{ $total }}</p>
+                    <p class="text-3xl font-bold text-green-600">{{ $loans->count() }}</p>
                     <p class="text-sm text-green-700">Total Pinjaman</p>
                 </div>
             </div>
         </div>
     </section>
+
+    {{-- Unpaid Fine Warning --}}
+    @if($totalFine > 0)
+        <section class="py-4 bg-red-50 border-b border-red-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center gap-3 p-4 bg-red-100 rounded-xl border border-red-200">
+                    <svg class="w-6 h-6 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+                    <div>
+                        <p class="font-semibold text-red-800">Anda memiliki denda belum dibayar: Rp {{ number_format($totalFine, 0, ',', '.') }}</p>
+                        <p class="text-sm text-red-700 mt-1">Silakan kunjungi perpustakaan untuk melakukan pembayaran denda.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    @endif
 
     @if(session('success'))
         <section class="py-4 bg-secondary-50">
@@ -95,30 +111,52 @@
                                         @endif
                                     </div>
 
-                                    <div class="flex gap-2">
-                                        @if(in_array($loan->status, ['approved', 'borrowed', 'returned']))
-                                            <a href="{{ route('loans.receipt', $loan->id) }}" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition">
-                                                Bukti
-                                            </a>
+                                    <div class="flex flex-col gap-2">
+                                        {{-- Fine info --}}
+                                        @if($loan->fine_amount > 0)
+                                            <div class="px-3 py-2 rounded-lg {{ $loan->fine_paid ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200' }}">
+                                                <p class="text-xs {{ $loan->fine_paid ? 'text-green-600' : 'text-red-600' }}">Denda</p>
+                                                <p class="font-bold {{ $loan->fine_paid ? 'text-green-700' : 'text-red-700' }}">{{ $loan->formatted_fine }}</p>
+                                                @if($loan->fine_paid)
+                                                    <p class="text-xs text-green-600">✓ Lunas</p>
+                                                @else
+                                                    <p class="text-xs text-red-600">Bayar di perpustakaan</p>
+                                                @endif
+                                            </div>
+                                        @elseif($loan->is_overdue)
+                                            <div class="px-3 py-2 rounded-lg bg-red-50 border border-red-200">
+                                                <p class="text-xs text-red-600">Est. Denda</p>
+                                                <p class="font-bold text-red-700">Rp {{ number_format($loan->calculated_fine, 0, ',', '.') }}</p>
+                                                <p class="text-xs text-red-600">{{ $loan->overdue_days }} hari terlambat</p>
+                                            </div>
                                         @endif
-                                        @if($loan->status === 'borrowed')
-                                            <form action="{{ route('loans.return', $loan->id) }}" method="POST" onsubmit="return confirm('Yakin ingin mengembalikan buku ini?')">
-                                                @csrf
-                                                <button class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition">
-                                                    Kembalikan
-                                                </button>
-                                            </form>
-                                        @endif
-                                        @if($loan->status === 'returned')
-                                            @php
-                                                $hasReview = \App\Models\Review::where('user_id', auth()->id())->where('book_id', $loan->book_id)->exists();
-                                            @endphp
-                                            @if(!$hasReview)
-                                                <a href="{{ route('reviews.create', $loan->book_id) }}" class="px-4 py-2 border border-primary-600 text-primary-600 text-sm font-medium rounded-lg hover:bg-primary-50 transition">
-                                                    Beri Ulasan
+
+                                        {{-- Actions --}}
+                                        <div class="flex gap-2">
+                                            @if(in_array($loan->status, ['approved', 'borrowed', 'returned']))
+                                                <a href="{{ route('loans.receipt', $loan->id) }}" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition">
+                                                    Bukti
                                                 </a>
                                             @endif
-                                        @endif
+                                            @if($loan->status === 'borrowed')
+                                                <form action="{{ route('loans.return', $loan->id) }}" method="POST" onsubmit="return confirm('Yakin ingin mengembalikan buku ini?')">
+                                                    @csrf
+                                                    <button class="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-lg hover:bg-green-700 transition">
+                                                        Kembalikan
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            @if($loan->status === 'returned')
+                                                @php
+                                                    $hasReview = \App\Models\Review::where('user_id', auth()->id())->where('book_id', $loan->book_id)->exists();
+                                                @endphp
+                                                @if(!$hasReview)
+                                                    <a href="{{ route('reviews.create', $loan->book_id) }}" class="px-4 py-2 border border-primary-600 text-primary-600 text-sm font-medium rounded-lg hover:bg-primary-50 transition">
+                                                        Beri Ulasan
+                                                    </a>
+                                                @endif
+                                            @endif
+                                        </div>
                                     </div>
                                 </div>
                             </div>

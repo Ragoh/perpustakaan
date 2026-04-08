@@ -35,7 +35,7 @@
                         <span class="block text-primary-200">Dalam Setiap Halaman</span>
                     </h1>
                     <p class="text-lg md:text-xl text-primary-100 mb-8 max-w-lg">
-                        Jelajahi ribuan koleksi buku terbaik dan lakukan peminjaman secara online. 
+                        Jelajahi koleksi buku terbaik dan lakukan peminjaman secara online. 
                         Ambil buku favorit Anda di perpustakaan dengan mudah.
                     </p>
 
@@ -53,18 +53,18 @@
                         </button>
                     </form>
 
-                    <!-- Stats -->
+                    <!-- Stats (Data Asli) -->
                     <div class="flex gap-8 mt-10">
                         <div>
-                            <p class="text-3xl font-bold">5,000+</p>
+                            <p class="text-3xl font-bold">{{ number_format($totalBooks) }}</p>
                             <p class="text-primary-200 text-sm">Koleksi Buku</p>
                         </div>
                         <div>
-                            <p class="text-3xl font-bold">1,200+</p>
+                            <p class="text-3xl font-bold">{{ number_format($totalMembers) }}</p>
                             <p class="text-primary-200 text-sm">Anggota Aktif</p>
                         </div>
                         <div>
-                            <p class="text-3xl font-bold">50+</p>
+                            <p class="text-3xl font-bold">{{ number_format($totalCategories) }}</p>
                             <p class="text-primary-200 text-sm">Kategori</p>
                         </div>
                     </div>
@@ -107,7 +107,7 @@
             <div class="flex flex-col md:flex-row md:items-end md:justify-between mb-10">
                 <div>
                     <h2 class="text-3xl font-bold text-secondary-900 mb-2">Buku Populer</h2>
-                    <p class="text-secondary-600">Buku yang paling banyak dipinjam minggu ini</p>
+                    <p class="text-secondary-600">Buku yang paling banyak dipinjam</p>
                 </div>
                 <a href="/books" class="inline-flex items-center gap-2 text-primary-600 font-semibold hover:text-primary-700 transition mt-4 md:mt-0">
                     Lihat Semua
@@ -117,32 +117,28 @@
                 </a>
             </div>
 
-            <!-- Books Grid -->
-            @php
-                $books = [
-                    ['id' => 1, 'title' => 'Laskar Pelangi', 'author' => 'Andrea Hirata', 'category' => 'Fiksi', 'rating' => 4.8, 'available' => true],
-                    ['id' => 2, 'title' => 'Bumi Manusia', 'author' => 'Pramoedya Ananta Toer', 'category' => 'Sejarah', 'rating' => 4.9, 'available' => true],
-                    ['id' => 3, 'title' => 'Filosofi Teras', 'author' => 'Henry Manampiring', 'category' => 'Self-Help', 'rating' => 4.7, 'available' => false],
-                    ['id' => 4, 'title' => 'Atomic Habits', 'author' => 'James Clear', 'category' => 'Pengembangan Diri', 'rating' => 4.9, 'available' => true],
-                    ['id' => 5, 'title' => 'Sapiens', 'author' => 'Yuval Noah Harari', 'category' => 'Sains', 'rating' => 4.6, 'available' => true],
-                    ['id' => 6, 'title' => 'Pulang', 'author' => 'Tere Liye', 'category' => 'Fiksi', 'rating' => 4.5, 'available' => false],
-                    ['id' => 7, 'title' => 'Sang Pemimpi', 'author' => 'Andrea Hirata', 'category' => 'Fiksi', 'rating' => 4.7, 'available' => true],
-                    ['id' => 8, 'title' => 'The Psychology of Money', 'author' => 'Morgan Housel', 'category' => 'Bisnis', 'rating' => 4.8, 'available' => true],
-                ];
-            @endphp
-
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                @foreach($books as $book)
-                    <x-book-card 
-                        :id="$book['id']"
-                        :title="$book['title']"
-                        :author="$book['author']"
-                        :category="$book['category']"
-                        :rating="$book['rating']"
-                        :available="$book['available']"
-                    />
-                @endforeach
-            </div>
+            <!-- Books Grid (Data Asli) -->
+            @if($popularBooks->count() > 0)
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    @foreach($popularBooks as $book)
+                        <x-book-card 
+                            :id="$book->id"
+                            :title="$book->title"
+                            :author="$book->author"
+                            :cover="$book->cover ? Storage::url($book->cover) : null"
+                            :category="$book->category->name ?? 'Umum'"
+                            :rating="$book->reviews_avg_rating ?? 0"
+                            :available="$book->is_available"
+                        />
+                    @endforeach
+                </div>
+            @else
+                <div class="bg-white rounded-2xl shadow-sm border border-secondary-200 p-12 text-center">
+                    <span class="text-6xl mb-4 block">📚</span>
+                    <h3 class="text-xl font-semibold text-secondary-900 mb-2">Belum ada buku</h3>
+                    <p class="text-secondary-600">Buku akan ditampilkan di sini setelah ditambahkan oleh petugas</p>
+                </div>
+            @endif
         </div>
     </section>
 
@@ -154,27 +150,22 @@
                 <p class="text-secondary-600">Temukan buku berdasarkan kategori favorit Anda</p>
             </div>
 
-            @php
-                $categories = [
-                    ['name' => 'Fiksi', 'icon' => '📖', 'count' => 1250, 'color' => 'from-blue-500 to-blue-600'],
-                    ['name' => 'Non-Fiksi', 'icon' => '📚', 'count' => 890, 'color' => 'from-green-500 to-green-600'],
-                    ['name' => 'Sains', 'icon' => '🔬', 'count' => 456, 'color' => 'from-purple-500 to-purple-600'],
-                    ['name' => 'Sejarah', 'icon' => '🏛️', 'count' => 324, 'color' => 'from-amber-500 to-amber-600'],
-                    ['name' => 'Bisnis', 'icon' => '💼', 'count' => 567, 'color' => 'from-indigo-500 to-indigo-600'],
-                    ['name' => 'Self-Help', 'icon' => '💡', 'count' => 432, 'color' => 'from-pink-500 to-pink-600'],
-                ];
-            @endphp
-
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                @foreach($categories as $category)
-                    <a href="/books?category={{ urlencode($category['name']) }}" 
-                       class="group bg-gradient-to-br {{ $category['color'] }} rounded-2xl p-6 text-white text-center hover:scale-105 transition-transform duration-300 shadow-lg">
-                        <span class="text-4xl block mb-3">{{ $category['icon'] }}</span>
-                        <h3 class="font-semibold mb-1">{{ $category['name'] }}</h3>
-                        <p class="text-sm text-white/80">{{ number_format($category['count']) }} Buku</p>
-                    </a>
-                @endforeach
-            </div>
+            @if($categories->count() > 0)
+                <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    @foreach($categories as $i => $category)
+                        <a href="/books?category={{ urlencode($category->name) }}" 
+                           class="group bg-gradient-to-br {{ $gradients[$i % count($gradients)] }} rounded-2xl p-6 text-white text-center hover:scale-105 transition-transform duration-300 shadow-lg">
+                            <span class="text-4xl block mb-3">{{ $category->icon ?? '📚' }}</span>
+                            <h3 class="font-semibold mb-1">{{ $category->name }}</h3>
+                            <p class="text-sm text-white/80">{{ number_format($category->books_count) }} Buku</p>
+                        </a>
+                    @endforeach
+                </div>
+            @else
+                <div class="text-center py-8">
+                    <p class="text-secondary-500">Belum ada kategori yang tersedia</p>
+                </div>
+            @endif
         </div>
     </section>
 
@@ -233,15 +224,17 @@
                 Siap Memulai Petualangan Membaca?
             </h2>
             <p class="text-primary-100 text-lg mb-8 max-w-2xl mx-auto">
-                Bergabung dengan ribuan pembaca lainnya dan nikmati akses ke koleksi buku terlengkap
+                Bergabung dengan pembaca lainnya dan nikmati akses ke koleksi buku terlengkap
             </p>
             <div class="flex flex-col sm:flex-row gap-4 justify-center">
                 <a href="/books" class="px-8 py-4 bg-white text-primary-600 font-semibold rounded-xl hover:bg-primary-50 transition shadow-lg">
                     Jelajahi Katalog
                 </a>
-                <a href="#" class="px-8 py-4 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-400 transition border-2 border-primary-400">
-                    Daftar Sekarang
-                </a>
+                @guest
+                    <a href="{{ route('register') }}" class="px-8 py-4 bg-primary-500 text-white font-semibold rounded-xl hover:bg-primary-400 transition border-2 border-primary-400">
+                        Daftar Sekarang
+                    </a>
+                @endguest
             </div>
         </div>
     </section>

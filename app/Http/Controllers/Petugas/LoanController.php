@@ -97,6 +97,7 @@ class LoanController extends Controller
 
     /**
      * Approve pengembalian buku
+     * Hitung denda jika terlambat
      */
     public function approveReturn($id)
     {
@@ -106,12 +107,37 @@ class LoanController extends Controller
             return back()->with('error', 'Peminjaman ini tidak dalam status menunggu konfirmasi pengembalian.');
         }
 
+        $returnDate = now();
+        $fineAmount = 0;
+
+        // Hitung denda jika terlambat
+        if ($returnDate->gt($loan->due_date)) {
+            $overdueDays = $loan->due_date->diffInDays($returnDate);
+            $fineAmount = $overdueDays * Loan::FINE_PER_DAY;
+        }
+
+        if ($fineAmount > 0) {
+            // Ada denda — simpan tapi belum selesai, tunggu pembayaran
+            $loan->update([
+                'return_date' => $returnDate,
+                'fine_amount' => $fineAmount,
+                'fine_paid' => false,
+                'status' => 'returned',
+            ]);
+
+            $formattedFine = 'Rp ' . number_format($fineAmount, 0, ',', '.');
+            return back()->with('success', "Pengembalian #{$loan->id} dikonfirmasi. Denda keterlambatan: {$formattedFine}. Menunggu pembayaran di perpustakaan.");
+        }
+
+        // Tidak ada denda
         $loan->update([
             'status' => 'returned',
-            'return_date' => now(),
+            'return_date' => $returnDate,
+            'fine_amount' => 0,
+            'fine_paid' => true,
         ]);
 
-        return back()->with('success', "Pengembalian #{$loan->id} berhasil dikonfirmasi.");
+        return back()->with('success', "Pengembalian #{$loan->id} berhasil dikonfirmasi. Tidak ada denda.");
     }
 
     /**
@@ -130,5 +156,25 @@ class LoanController extends Controller
         ]);
 
         return back()->with('success', "Pengembalian #{$loan->id} ditolak, status kembali ke dipinjam.");
+    }
+
+    /**
+     * Konfirmasi denda sudah dibayar (petugas)
+     */
+    public function confirmFinePaid($id)
+    {
+        $loan = Loan::findOrFail($id);
+
+        if ($loan->fine_amount <= 0 || $loan->fine_paid) {
+            return back()->with('error', 'Tidak ada denda yang perlu dikonfirmasi.');
+        }
+
+        $loan->update([
+            'fine_paid' => true,
+            'fine_paid_at' => now(),
+            'fine_confirmed_by' => auth()->id(),
+        ]);
+
+        return back()->with('success', "Pembayaran denda #{$loan->id} sebesar {$loan->formatted_fine} berhasil dikonfirmasi.");
     }
 }
